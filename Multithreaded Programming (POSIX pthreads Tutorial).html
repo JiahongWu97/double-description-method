@@ -1,0 +1,859 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- saved from url=(0042)https://randu.org/tutorials/threads/#other -->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <script type="text/javascript">
+        var appInsights=window.appInsights||function(config){
+          function i(config){t[config]=function(){var i=arguments;t.queue.push(function(){t[config].apply(t,i)})}}var t={config:config},u=document,e=window,o="script",s="AuthenticatedUserContext",h="start",c="stop",l="Track",a=l+"Event",v=l+"Page",y=u.createElement(o),r,f;y.src=config.url||"https://az416426.vo.msecnd.net/scripts/a/ai.0.js";u.getElementsByTagName(o)[0].parentNode.appendChild(y);try{t.cookie=u.cookie}catch(p){}for(t.queue=[],t.version="1.0",r=["Event","Exception","Metric","PageView","Trace","Dependency"];r.length;)i("track"+r.pop());return i("set"+s),i("clear"+s),i(h+a),i(c+a),i(h+v),i(c+v),i("flush"),config.disableExceptionTracking||(r="onerror",i("_"+r),f=e[r],e[r]=function(config,i,u,e,o){var s=f&&f(config,i,u,e,o);return s!==!0&&t["_"+r](config,i,u,e,o),s}),t
+          }({
+              instrumentationKey:"129720ff-4bbd-434b-8609-3e3503987ede"
+          });
+           
+          window.appInsights=appInsights;
+          appInsights.trackPageView();
+      </script><script src="./Multithreaded Programming (POSIX pthreads Tutorial)_files/ai.0.js.下载"></script>
+      <script type="text/javascript" src="./Multithreaded Programming (POSIX pthreads Tutorial)_files/shCore.js.下载"></script>
+      <script type="text/javascript" src="./Multithreaded Programming (POSIX pthreads Tutorial)_files/shBrushCpp.js.下载"></script>
+      <link href="./Multithreaded Programming (POSIX pthreads Tutorial)_files/shCore.css" rel="stylesheet" type="text/css">
+      <link href="./Multithreaded Programming (POSIX pthreads Tutorial)_files/shThemeDefault.css" rel="stylesheet" type="text/css">
+      <link rel="stylesheet" type="text/css" href="./Multithreaded Programming (POSIX pthreads Tutorial)_files/style.css">
+      <script type="text/javascript">
+         SyntaxHighlighter.all()
+      </script>
+  <meta name="keywords" content="pthreads, pthread, threads, posix, 
+    multithreading, multi-threading, multithreaded, multi-threaded, 
+    programming, tutorial, program, language, how-to, faq, computer,
+    science">
+  <meta name="description" content="Pthreads Programming Tutorial">
+  <title>Multithreaded Programming (POSIX pthreads Tutorial)</title>
+</head>
+
+<body>
+  <h1>Multithreaded Programming (POSIX pthreads Tutorial)</h1>
+
+  <table width="100%">
+    <tbody><tr>
+      <td class="box">
+        <b>Table of Contents:</b><br>
+        1. <a href="https://randu.org/tutorials/threads/#intro">Introduction</a><br>
+        2. <a href="https://randu.org/tutorials/threads/#what">What is a Thread?</a><br>
+        3. <a href="https://randu.org/tutorials/threads/#tdp">Thread Design Patterns</a><br>
+        4. <a href="https://randu.org/tutorials/threads/#protect">Protecting Shared Resources</a><br> 
+        5. <a href="https://randu.org/tutorials/threads/#tsp">Thread Synchronization Primitives</a><br>
+        6. <a href="https://randu.org/tutorials/threads/#pthreads">POSIX pthreads</a><br>
+        7. <a href="https://randu.org/tutorials/threads/#performance">Performance Considerations</a><br>
+        8. <a href="https://randu.org/tutorials/threads/#other">Other Approaches</a><br>
+        9. <a href="https://randu.org/tutorials/threads/#resources">Resources</a>
+      </td>
+      <td>&nbsp;</td>
+      <td class="copynotice">
+        If the document URL does not begin with
+        <a href="https://randu.org/tutorials/threads/">https://randu.org/tutorials/threads/</a>
+         then you are viewing a copy.
+      </td>
+    </tr>
+  </tbody></table>
+
+  <h2 id="intro">Introduction</h2>
+  <p>
+    Code is often written in a <i>serialized</i> (or sequential) fashion. What
+    is meant by the term serialized? Ignoring <a href="http://wikipedia.org/wiki/Instruction_level_parallelism">instruction level parallelism (ILP)</a>,
+    code is executed sequentially, one after the next in a monolithic
+    fashion, without regard to possibly more available processors the program
+    could exploit. Often, there are potential parts of a program where
+    performance can be improved through the use of threads.
+    <br><br>
+    With increasing popularity of machines with symmetric multiprocessing
+    (largely due in part to the rise of multicore processors), programming
+    with threads is a valuable skill set worth learning.
+    <br><br>
+    Why is it that most programs are sequential? One guess would be that
+    students are not taught how to program in a parallel fashion until
+    later or in a difficult-to-follow manner.
+    To make matters worse, multithreading non-trivial code is difficult.
+    Careful analysis of the problem, and then a good design is not an option
+    for multithreaded programming; it is an absolute must.
+    <br><br>
+    We will dive into the world of threads with a little bit of background 
+    first. We will examine thread synchronization primitives and then a 
+    tutorial on how to use POSIX pthreads will be presented.
+  </p>
+ 
+  <h2 id="what">What is a Thread?</h2>
+  <h3>Analogy</h3>
+  <p>
+    Isn't that something you put through an eye of a sewing needle?
+  </p>
+  <blockquote>Yes.</blockquote>
+  <p>
+    How does it relate to programming then?
+  </p>
+    <blockquote>
+    Think of sewing needles as the processors and the threads in a program
+    as the thread fiber. If you had two needles but only one thread, it
+    would take longer to finish the job (as one needle is idle) than if you 
+    split the thread into two and used both needles at the same time.
+    Taking this analogy a little further, if one needle had to 
+    sew on a button (blocking I/O), the other needle could continue doing 
+    other useful work even if the other needle took 1 hour to sew on a single
+    button. If you only used one needle, you would be ~1 hour behind!
+    </blockquote>
+  <h3>Definition</h3>
+  <table>
+    <tbody><tr>
+      <td>
+        In order to define a thread formally, we must first understand the 
+        boundaries of where a thread operates.
+        <br><br>
+        A computer program becomes a <b>process</b> when it is loaded from some
+        store into the computer's memory and begins execution. A process can
+        be executed by a processor or a set of processors. A process 
+        description in memory contains vital information such as the program
+        counter which keeps track of the current position in the program 
+        (i.e. which instruction is currently being executed), registers, 
+        variable stores, file handles, signals, and so forth.
+        <br><br>
+        A <b>thread</b> is a sequence of such instructions within a program
+        that can be executed independently of other code.
+        <br><br>
+        The figure to the right conceptually shows that threads are within the
+        <i>same process address space</i>, thus, much of the information
+        present in the memory description of the process can be shared across
+        threads.
+        <br><br>
+        Some information cannot be replicated, such as the stack (stack
+        pointer to a different memory area per thread), registers and
+        thread-specific data. This information sufficies to allow threads to
+        be scheduled independently of the program's main thread and possibly
+        one or more other threads within the program.
+        <br><br>
+        Explicit operating system support is required to run multithreaded
+        programs. Fortunately, most modern operating systems support threads
+        such as Linux (via NPTL), BSD variants, Mac OS X, Windows, Solaris,
+        AIX, HP-UX, etc. Operating systems may use different mechanisms to
+        implement multithreading support.
+      </td>
+      <td>&nbsp;&nbsp;</td>
+      <td>
+        <img src="./Multithreaded Programming (POSIX pthreads Tutorial)_files/process.png" alt="process">
+      </td>
+    </tr>
+  </tbody></table>
+ 
+  <h3>Terminology</h3>
+  <p>
+    Before we can dive in depth into threading concepts, we need to get 
+    familiarized with a few terms related to threads, parallelism and 
+    concurrency.
+  </p>
+  <ul>
+    <li><b>Lightweight Process</b> (LWP) can be thought of as a virtual CPU
+    where the number of LWPs is usually greater than the number of CPUs in the
+    system. Thread libraries communicate with LWPs to schedule threads. LWPs
+    are also sometimes referred to as <i>kernel threads</i>.</li>
+    <li><b>X-to-Y</b> model. The mapping between LWPs and Threads. Depending
+    upon the operating system implementation and/or user-level thread library
+    in use, this can vary from 1:1, X:1, or X:Y. Linux, some BSD kernels,
+    and some Windows versions use the 1:1 model. User-level threading
+    libraries are commonly in the X:1 class as the underlying kernel does
+    not have any knowledge of the user-level threads. The X:Y model is
+    used in Windows 7.</li>
+    <li><b>Contention Scope</b> is how threads compete for system resources
+    (i.e. scheduling).</li>
+    <li><b>Bound threads</b> have system-wide contention scope, in other
+    words, these threads contend with other processes on the entire
+    system.</li> 
+    <li><b>Unbound threads</b> have process contention scope.</li>
+    <li><b>Thread-safe</b> means that the program protects shared data, 
+    possibly through the use of mutual exclusion.</li>
+    <li><b>Reentrant</b> code means that a program can have more than one
+    thread executing concurrently.</li>
+    <li><b>Async-safe</b> means that a function is reentrant while handling 
+    a signal (i.e. can be called from a signal handler).</li>
+    <li><b>Concurrency vs. Parallelism</b> - They are not the same! 
+    Parallelism implies simultaneous running of code (which is not possible, 
+    in the strict sense, on uniprocessor machines) while concurrency implies 
+    that many tasks can run in any order and possibly in parallel.</li>
+  </ul>
+  
+  <h3>Amdahl's Law and the Pareto Principle</h3>
+  <p>
+    Threads can provide benefits... <i>for the right applications!</i> Don't 
+    waste your time multithreading a portion of code or an entire program 
+    that isn't worth multithreading.
+    <br><br>
+    Gene Amdahl argued the theoretical maximum improvement that is possible
+    for a computer program that is parallelized, under the premise that
+    the program is strongly scaled (i.e. the program operates on a fixed
+    problem size). His claim is a well known assertion known as 
+    <a href="http://en.wikipedia.org/wiki/Amdahl%27s_law">Amdahl's Law</a>.
+    Essentially, Amdahl's law states that the speedup of a program due
+    to parallelization can be no larger than the inverse of the portion
+    of the program that is immutably sequential. For example, if 50% of
+    your program is not parallelizable, then you can only expect a maximum
+    speedup of 2x, regardless the number of processors you throw at the
+    problem. Of course many problems and data sets that parallel programs
+    process are not of fixed size or the serial portion can be very close
+    to zero. What is important to the reader here, is to understand that
+    most interesting problems that are solved by computer programs tend to
+    have some limitations in the amount of parallelism that can be effectively
+    expressed (or introduced by the very mechanism to parallelize) and 
+    exploited as threads or some other parallel construct.
+    <br><br>
+    It must be underscored how important it is to understand the problem
+    the computer program is trying to solve first, before simply jumping in
+    head first. Careful planning and consideration of not only what the
+    program must attack in a parallel fashion and the means to do so by way
+    of the algorithms employed and the vehicle for which they are delivered
+    must be performed.
+    <br><br>
+    There is a common saying: "90% of processor cycles are spent in 10% of
+    the code." This is more formally known as the <a href="http://en.wikipedia.org/wiki/Pareto_principle">Pareto Principle</a>.
+    Carefully analyze your code or your design plan; don't spend all of
+    your time optimizing/parallelizing the 90% of the code that doesn't matter 
+    much! Code profiling and analysis is outside of the scope of this document,
+    but it is recommended reading left to those unfamiliar with the subject.
+  </p>
+ 
+  <h2 id="tdp">Thread Design Patterns</h2>
+  <p>
+    There are different ways to use threads within a program. Here, three
+    common thread design patterns are presented. There is no hard and fast
+    rule on which is the best. It depends on what the program is intended
+    to tackle and in what context. It is up to you to decide which best 
+    pattern or patterns fit your needs.
+  </p>
+  <h3>Thread Pool (Boss/Worker)</h3>
+  <p>
+    One thread dispatches other threads to do useful work which are usually 
+    part of a <i>worker thread pool</i>. This thread pool is usually 
+    pre-allocated before the boss (or master) begins dispatching threads to
+    work. Although threads are lightweight, they still incur overhead when 
+    they are created.
+  </p>
+  <h3>Peer (Workcrew)</h3>
+  <p>
+    The peer model is similar to the boss/worker model except once the worker 
+    pool has been created, the boss becomes the another thread in the thread 
+    pool, and is thus, a peer to the other threads.
+  </p>
+  <h3>Pipeline</h3>
+  <p>
+    Similar to how pipelining works in a processor, each thread is part of
+    a long chain in a processing factory. Each thread works on data processed
+    by the previous thread and hands it off to the next thread. You must be 
+    careful to equally distribute work and take extra steps to ensure 
+    non-blocking behavior in this thread model or you could experience 
+    pipeline "stalls."
+  </p>
+ 
+  <h2 id="protect">Protecting Shared Resources</h2>
+  <p>
+    Threads may operate on disparate data, but often threads may have to
+    touch the same data. It is unsafe to allow concurrent access to such
+    data or resources without some <i>mechanism that defines a protocol for
+    safe access</i>! Threads must be explicitly instructed to block when
+    other threads may be potentially accessing the same resources.
+  </p>
+  <h3>Mutual Exclusion</h3>
+  <p>
+    Mutual exclusion is the method of <i>serializing access</i> to shared 
+    resources. You do not want a thread to be modifying a variable that is 
+    already in the process of being modified by another thread! Another 
+    scenario is a dirty read where the value is in the process of being 
+    updated and another thread reads an old value.
+    <br><br>
+    Mutual exclusion allows the programmer to create a defined
+    protocol for serializing access to shared data or resources.
+    Logically, a <b>mutex</b> is a lock that one can virtually
+    attach to some resource. If a thread wishes to modify or read a value 
+    from a shared resource, the thread must first gain the lock. Once it
+    has the lock it may do what it wants with the 
+    shared resource without concerns of other threads accessing the shared
+    resource because other threads will have to wait. Once the thread finishes
+    using the shared resource, it unlocks the mutex, which allows other
+    threads to access the resource. This is a protocol that serializes access
+    to the shared resource. Note that such a protocol must be enforced for
+    the data or resource a mutex is protecting across all threads that may
+    touch the resource being protected. If the protocol is violated (e.g.,
+    a thread modifies a shared resource without first requesting a mutex
+    lock), then the protocol defined by the programmer has failed. There
+    is nothing preventing a thread programmer, whether unintentionally
+    (most often the case, i.e., a bug -- see race conditions below) or
+    intentionally from implementing a flawed serialization protocol.
+    <br><br>
+    As an analogy, you can think of a mutex as a safe with only one key
+    (for a standard mutex case), and the resource it is protecting lies 
+    within the safe. Only one person can have the key to the chest at any 
+    time, therefore, is the only person allowed to look or modify the 
+    contents of the chest at the time it holds the key.
+    <br><br>
+    The code between the lock and unlock calls to the mutex, is referred to
+    as a <b>critical section</b>. Minimizing time spent in the critical 
+    section allows for greater concurrency because it potentially reduces the
+    amount of time other threads must wait to gain the lock. Therefore, it is
+    important for a thread programmer to minimize critical sections
+    if possible.
+  </p>
+  <h3>Mutex Types</h3>
+  <p>
+    There are different types of locks other than the standard simple 
+    blocking kind.
+  </p>
+  <ul>
+    <li><b>Recursive</b>: allows a thread holding the lock to acquire the
+    same lock again which may be necessary for recursive algorithms.</li>
+    <li><b>Queuing</b>: allows for <i>fairness</i> in lock acquisition by
+    providing FIFO ordering to the arrival of lock requests. Such mutexes
+    may be slower due to increased overhead and the possibility of having to
+    wake threads next in line that may be sleeping.</li>
+    <li><b>Reader/Writer</b>: allows for multiple readers to acquire the
+    lock simultaneously. If existing readers have the lock, a writer request
+    on the lock will block until all readers have given up the lock. This
+    can lead to writer starvation.</li>
+    <li><b>Scoped</b>: <a href="http://en.wikipedia.org/wiki/Resource_Acquisition_Is_Initialization">RAII</a>-style semantics regarding lock acquisition and
+    unlocking.</li>
+  </ul>
+  <p>
+    Depending upon the thread library or interface being used, only a subset
+    of the additional types of locks may be available. POSIX pthreads
+    allows recursive and reader/writer style locks.
+  </p>
+  <h3>Potential Traps with Mutexes</h3>
+  <p>
+    An important problem associated with mutexes is the possibility of 
+    <b>deadlock</b>. A program can deadlock if two (or more) threads have 
+    stopped execution or are spinning permanently. For example, a simple
+    deadlock situation: thread 1 locks lock A, thread 2 locks lock B,
+    thread 1 wants lock B and thread 2 wants lock A. Instant deadlock. You
+    can prevent this from happening by making sure threads acquire locks 
+    in an agreed order (i.e. preservation of <b>lock ordering</b>). Deadlock
+    can also happen if threads do not unlock mutexes properly.
+    <br><br>
+    A <b>race condition</b> is when non-deterministic behavior results from
+    threads accessing shared data or resources without following a defined
+    synchronization protocol for serializing such access. This can result 
+    in erroneous outcomes that cause failure or inconsistent behavior making
+    race conditions particularly difficult to debug. In addition to 
+    incorrectly synchronized access to shared resources, library calls
+    outside of your program's control are common culprits. Make sure you take
+    steps within your program to enforce serial access to shared file 
+    descriptors and other external resources. Most man pages will contain
+    information about thread safety of a particular function, and if it
+    is not thread-safe, if any alternatives exist (e.g.,
+    <code>gethostbyname()</code> and <code>gethostbyname_r()</code>).
+    <br><br>
+    Another problem with mutexes is that contention for a mutex can lead to
+    <b>priority inversion</b>. A higher priority thread can wait behind a lower
+    priority thread if the lower priority thread holds a lock for which the 
+    higher priority thread is waiting. This can be eliminated/reduced by 
+    limiting the number of shared mutexes between different priority threads.
+    A famous case of priority inversion occurred on the
+    <a href="http://research.microsoft.com/en-us/um/people/mbj/Mars_Pathfinder/Authoritative_Account.html">Mars Pathfinder</a>.
+  </p>
+  <h3>Atomic Operations</h3>
+  <p>
+    Atomic operations allow for concurrent algorithms and access to certain
+    shared data types without the use of mutexes. For example, if there is 
+    sufficient compiler and system support, one can modify some variable 
+    (e.g., a 64-bit integer) within a multithreaded context without having to 
+    go through a locking protocol. Many atomic calls are non-portable and 
+    specific to the compiler and system. Intel Threading Building Blocks 
+    (see <a href="https://randu.org/tutorials/threads/#other">below</a>), contains semi-portable atomic support 
+    under C++. The C++1x and C1x standards will also include atomic 
+    operations support. For gcc-specific atomic support, please see
+    <a href="http://gcc.gnu.org/onlinedocs/gcc/Atomic-Builtins.html">this</a>
+    and <a href="http://gcc.gnu.org/wiki/Atomic">this</a>.
+    <br><br>
+    Lock-free algorithms can provide highly concurrent and scalable operations.
+    However, lock-free algorithms may be more complex than their lock-based
+    counterparts, potentially incurring additional overhead that may induce 
+    negative cache effects and other problems. Careful analysis and 
+    performance testing is required for the problem under consideration.
+  </p>
+ 
+  <h2 id="tsp">Thread Synchronization Primitives</h2>
+  <p>
+    As we have just discussed, mutexes are one way of synchronizing access
+    to shared resources. There are other mechanisms available for not only
+    coordinating access to resources but synchronizing threads.
+  </p>
+  <h3>Join</h3>
+  <p>
+    A thread join is a protocol to allow the programmer to <i>collect</i>
+    all relevant threads at a logical synchronization point. For example,
+    in fork-join parallelism, threads are spawned to tackle parallel tasks
+    and then join back up to the main thread after completing their
+    respective tasks (thus performing an implicit barrier at the join point).
+    Note that a thread that executes a join has terminated execution of their
+    respective thread function.
+  </p>
+  <h3>Condition Variables</h3>
+  <table>
+    <tbody><tr>
+      <td>
+    Condition variables allow threads to synchronize to a value of a shared 
+    resource. Typically, condition variables are used as a notification 
+    system between threads.
+    <br><br>
+    For example, you could have a counter that once reaching a certain
+    count, you would like for a thread to activate. The thread (or threads)
+    that activates once the counter reaches the limit would <i>wait</i> on 
+    the condition variable. Active threads <i>signal</i> on this condition 
+    variable to notify other threads waiting/sleeping on this condition 
+    variable; thus causing a waiting thread to wake. You can also use a
+    <i>broadcast</i> mechanism if you want to signal <i>all</i> threads 
+    waiting on the condition variable to wakeup. Conceptually, this is
+    modeled by the figure on the right with pseudocode.
+    <br><br>
+    When waiting on condition variables, the wait should be inside a loop, not
+    in a simple if statement because of <b>spurious wakeups</b>. You are not
+    guaranteed that if a thread wakes up, it is the result of a signal or 
+    a broadcast call.
+      </td>
+      <td>&nbsp;&nbsp;</td>
+      <td>
+        <img src="./Multithreaded Programming (POSIX pthreads Tutorial)_files/condition_wait.png" alt="cv">
+      </td>
+    </tr>
+  </tbody></table>
+  <h3>Barriers</h3>
+  <p>
+    Barriers are a method to synchronize a set of threads at some point in
+    time by having all participating threads in the barrier wait until all
+    threads have called the said barrier function. This, in essence, blocks
+    all threads participating in the barrier until the slowest participating
+    thread reaches the barrier call.
+  </p>
+  <h3>Spinlocks</h3>
+  <p>
+    Spinlocks are locks which <i>spin</i> on mutexes. Spinning refers to
+    continuously polling until a condition has been met. In the case of
+    spinlocks, if a thread cannot obtain the mutex, it will keep polling the 
+    lock until it is free. The advantage of a spinlock is that the thread is
+    kept active and does not enter a sleep-wait for a mutex to become
+    available, thus can perform better in certain cases than typical
+    blocking-sleep-wait style mutexes. Mutexes which are heavily contended
+    are poor candidates for spinlocks.
+    <br><br>
+    Spinlocks should be avoided in uniprocessor contexts. Why is this?
+  </p>
+  <h3>Semaphores</h3>
+  <p>
+    Semaphores are another type of synchronization primitive that come in two 
+    flavors: binary and counting. Binary semaphores act much like simple
+    mutexes, while counting semaphores can behave as <i>recursive mutexes</i>. 
+    Counting semaphores can be initialized to any arbitrary value which 
+    should depend on how many resources you have available for that particular
+    shared data. Many threads can obtain the lock simultaneously until the 
+    limit is reached. This is referred to as <i>lock depth</i>.
+    <br><br>
+    Semaphores are more common in multiprocess programming (i.e. it's usually
+    used as a synch primitive between processes).
+  </p>
+
+  <h2 id="pthreads">POSIX pthreads</h2>
+  <p>
+    Now that we have a good foundation of thread concepts, lets talk about a
+    particular threading implementation, POSIX pthreads. The pthread library 
+    can be found on almost any modern POSIX-compliant OS (and even under
+    Windows, see
+    <a href="http://sourceware.org/pthreads-win32/">pthreads-win32</a>).
+    <br><br>
+    Note that it is not possible to cover more than an introduction on pthreads
+    within the context of this short overview and tutorial. pthreads concepts
+    such as thread scheduling classes, thread-specific data, thread canceling,
+    handling signals and reader/writer locks are not covered here. Please see 
+    the <a href="https://randu.org/tutorials/threads/#resources">Resources</a> section for more information.
+    <br><br>
+    If you are programming in C++, I highly recommend evaluating the
+    <a href="http://www.boost.org/">Boost C++ Libraries</a>. One of the 
+    libraries is the 
+    <a href="http://www.boost.org/doc/html/thread.html">Thread</a> library
+    which provides a common interface for portable multithreading.
+    <br><br>
+    It is assumed that you have a good understanding of the C
+    programming language. If you do not or need to brush up, please review
+    basic C (especially pointers and arrays). Here are some 
+    <a href="https://randu.org/tutorials/">resources</a>.
+  </p>
+  <h3>Preliminaries</h3>
+  <p>
+    Before we begin, there are a few required steps you need to take before 
+    starting any pthreads coding:
+  </p>
+  <ol>
+    <li>Add <code>#include &lt;pthread.h&gt;</code> to your source file(s).</li>
+    <li>If you are using gcc, you can simply specify <code>-pthread</code>
+      which will set all proper defines and link-time libraries. On other
+      compilers, you may have to define <code>_REENTRANT</code>
+      and link against <code>-lpthread</code>.</li>
+    <li><i>Optional:</i> some compilers may require defining
+      <code>_POSIX_PTHREAD_SEMANTICS</code> for certain function calls 
+      like <code>sigwait()</code>.</li>
+  </ol>
+  <h3>Creating pthreads</h3>
+  <p>
+    A pthread is represented by the type <code>pthread_t</code>. To create a
+    thread, the following function is available:
+  </p>
+<div><div id="highlighter_251386" class="syntaxhighlighter  c"><div class="toolbar"><span><a href="https://randu.org/tutorials/threads/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="c color1 bold">int</code> <code class="c plain">pthread_create(pthread_t *</code><code class="c keyword bold">thread</code><code class="c plain">, pthread_attr_t *attr, </code></div><div class="line number2 index1 alt1"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c keyword bold">void</code> <code class="c plain">*(*start_routine)(</code><code class="c keyword bold">void</code> <code class="c plain">*), </code><code class="c keyword bold">void</code> <code class="c plain">*arg);</code></div></div></td></tr></tbody></table></div></div>
+  <p>
+    Let's digest the arguments required for <code>pthread_create()</code>:
+  </p>
+  <ol>
+    <li><code>pthread_t *thread</code>: the actual thread object that contains
+        pthread id</li>
+    <li><code>pthread_attr_t *attr</code>: attributes to apply to this 
+        thread</li>
+    <li><code>void *(*start_routine)(void *)</code>: the function this thread
+        executes</li>
+    <li><code>void *arg</code>: arguments to pass to thread function above</li>
+  </ol>
+  <p>
+    Before we dive into an example, let's first look at two other important
+    thread functions:
+  </p>
+<div><div id="highlighter_151570" class="syntaxhighlighter  c"><div class="toolbar"><span><a href="https://randu.org/tutorials/threads/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="c keyword bold">void</code> <code class="c plain">pthread_exit(</code><code class="c keyword bold">void</code> <code class="c plain">*value_ptr);</code></div><div class="line number2 index1 alt1"><code class="c color1 bold">int</code> <code class="c plain">pthread_join(pthread_t </code><code class="c keyword bold">thread</code><code class="c plain">, </code><code class="c keyword bold">void</code> <code class="c plain">**value_ptr);</code></div><div class="line number3 index2 alt2">&nbsp;</div><div class="line number4 index3 alt1"><code class="c comments">/* ignore me: needed so underscores above do not get clipped off */</code></div></div></td></tr></tbody></table></div></div>
+  <p>
+    <code>pthread_exit()</code> terminates the thread and provides the pointer
+    <code>*value_ptr</code> available to any <code>pthread_join()</code>
+    call.
+    <br><br>
+    <code>pthread_join()</code> suspends the calling thread to wait for
+    successful termination of the thread specified as the first argument
+    <code>pthread_t thread</code> with an optional <code>*value_ptr</code>
+    data passed from the terminating thread's call to
+    <code>pthread_exit()</code>.
+    <br><br>
+    Let's look at an example program exercising the above pthread functions:
+  </p>
+<div><div id="highlighter_15186" class="syntaxhighlighter  c"><div class="toolbar"><span><a href="https://randu.org/tutorials/threads/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div><div class="line number5 index4 alt2">5</div><div class="line number6 index5 alt1">6</div><div class="line number7 index6 alt2">7</div><div class="line number8 index7 alt1">8</div><div class="line number9 index8 alt2">9</div><div class="line number10 index9 alt1">10</div><div class="line number11 index10 alt2">11</div><div class="line number12 index11 alt1">12</div><div class="line number13 index12 alt2">13</div><div class="line number14 index13 alt1">14</div><div class="line number15 index14 alt2">15</div><div class="line number16 index15 alt1">16</div><div class="line number17 index16 alt2">17</div><div class="line number18 index17 alt1">18</div><div class="line number19 index18 alt2">19</div><div class="line number20 index19 alt1">20</div><div class="line number21 index20 alt2">21</div><div class="line number22 index21 alt1">22</div><div class="line number23 index22 alt2">23</div><div class="line number24 index23 alt1">24</div><div class="line number25 index24 alt2">25</div><div class="line number26 index25 alt1">26</div><div class="line number27 index26 alt2">27</div><div class="line number28 index27 alt1">28</div><div class="line number29 index28 alt2">29</div><div class="line number30 index29 alt1">30</div><div class="line number31 index30 alt2">31</div><div class="line number32 index31 alt1">32</div><div class="line number33 index32 alt2">33</div><div class="line number34 index33 alt1">34</div><div class="line number35 index34 alt2">35</div><div class="line number36 index35 alt1">36</div><div class="line number37 index36 alt2">37</div><div class="line number38 index37 alt1">38</div><div class="line number39 index38 alt2">39</div><div class="line number40 index39 alt1">40</div><div class="line number41 index40 alt2">41</div><div class="line number42 index41 alt1">42</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="c preprocessor">#include &lt;stdio.h&gt;</code></div><div class="line number2 index1 alt1"><code class="c preprocessor">#include &lt;stdlib.h&gt;</code></div><div class="line number3 index2 alt2"><code class="c preprocessor">#include &lt;pthread.h&gt;</code></div><div class="line number4 index3 alt1">&nbsp;</div><div class="line number5 index4 alt2"><code class="c preprocessor">#define NUM_THREADS 2</code></div><div class="line number6 index5 alt1">&nbsp;</div><div class="line number7 index6 alt2"><code class="c comments">/* create thread argument struct for thr_func() */</code></div><div class="line number8 index7 alt1"><code class="c keyword bold">typedef</code> <code class="c keyword bold">struct</code> <code class="c plain">_thread_data_t {</code></div><div class="line number9 index8 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c color1 bold">int</code> <code class="c plain">tid;</code></div><div class="line number10 index9 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c color1 bold">double</code> <code class="c plain">stuff;</code></div><div class="line number11 index10 alt2"><code class="c plain">} thread_data_t;</code></div><div class="line number12 index11 alt1">&nbsp;</div><div class="line number13 index12 alt2"><code class="c comments">/* thread function */</code></div><div class="line number14 index13 alt1"><code class="c keyword bold">void</code> <code class="c plain">*thr_func(</code><code class="c keyword bold">void</code> <code class="c plain">*arg) {</code></div><div class="line number15 index14 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">thread_data_t *data = (thread_data_t *)arg;</code></div><div class="line number16 index15 alt1">&nbsp;</div><div class="line number17 index16 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c functions bold">printf</code><code class="c plain">(</code><code class="c string">"hello from thr_func, thread id: %d\n"</code><code class="c plain">, data-&gt;tid);</code></div><div class="line number18 index17 alt1">&nbsp;</div><div class="line number19 index18 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">pthread_exit(NULL);</code></div><div class="line number20 index19 alt1"><code class="c plain">}</code></div><div class="line number21 index20 alt2">&nbsp;</div><div class="line number22 index21 alt1"><code class="c color1 bold">int</code> <code class="c plain">main(</code><code class="c color1 bold">int</code> <code class="c plain">argc, </code><code class="c color1 bold">char</code> <code class="c plain">**argv) {</code></div><div class="line number23 index22 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">pthread_t thr[NUM_THREADS];</code></div><div class="line number24 index23 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c color1 bold">int</code> <code class="c plain">i, rc;</code></div><div class="line number25 index24 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c comments">/* create a thread_data_t argument array */</code></div><div class="line number26 index25 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">thread_data_t thr_data[NUM_THREADS];</code></div><div class="line number27 index26 alt2">&nbsp;</div><div class="line number28 index27 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c comments">/* create threads */</code></div><div class="line number29 index28 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c keyword bold">for</code> <code class="c plain">(i = 0; i &lt; NUM_THREADS; ++i) {</code></div><div class="line number30 index29 alt1"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c plain">thr_data[i].tid = i;</code></div><div class="line number31 index30 alt2"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c keyword bold">if</code> <code class="c plain">((rc = pthread_create(&amp;thr[i], NULL, thr_func, &amp;thr_data[i]))) {</code></div><div class="line number32 index31 alt1"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c functions bold">fprintf</code><code class="c plain">(stderr, </code><code class="c string">"error: pthread_create, rc: %d\n"</code><code class="c plain">, rc);</code></div><div class="line number33 index32 alt2"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c keyword bold">return</code> <code class="c plain">EXIT_FAILURE;</code></div><div class="line number34 index33 alt1"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c plain">}</code></div><div class="line number35 index34 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">}</code></div><div class="line number36 index35 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c comments">/* block until all threads complete */</code></div><div class="line number37 index36 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c keyword bold">for</code> <code class="c plain">(i = 0; i &lt; NUM_THREADS; ++i) {</code></div><div class="line number38 index37 alt1"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c plain">pthread_join(thr[i], NULL);</code></div><div class="line number39 index38 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">}</code></div><div class="line number40 index39 alt1">&nbsp;</div><div class="line number41 index40 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c keyword bold">return</code> <code class="c plain">EXIT_SUCCESS;</code></div><div class="line number42 index41 alt1"><code class="c plain">}</code></div></div></td></tr></tbody></table></div></div>
+  <p>
+    This program creates <code>NUM_THREADS</code> threads and prints their
+    respective user-assigned thread id. The first thing to notice is the
+    call to <code>pthread_create()</code> in the main function. The syntax
+    of the third and fourth argument are particularly important. Notice that
+    the <code>thr_func</code> is the name of the thread function, while the
+    fourth argument is the argument passed to said function. Here we are
+    passing a thread function argument that we created as a
+    <code>thread_data_t</code> struct. Of course, you can pass simple
+    data types as pointers if that is all that is needed, or <code>NULL</code>
+    if no arguments are required. However, it is good practice to be able
+    to pass arguments of arbitrary type and size, and is thus illustrated
+    for this purpose.
+    <br><br>
+    A few things to mention:
+  </p>
+  <ul>
+    <li>Make sure you check the return values for all important functions.</li>
+    <li>The second argument to <code>pthread_create()</code> is 
+        <code>NULL</code> indicating to create a thread with default
+        attributes. The defaults vary depend upon the system and pthread 
+        implementation.</li>
+    <li>Notice that we have broken apart the <code>pthread_join()</code>
+        from the <code>pthread_create()</code>. Why is it that you should not
+        integrate the <code>pthread_join()</code> in to the thread creation
+        loop?</li>
+    <li>Although not explicitly required to call <code>pthread_exit()</code>
+        at the end of the thread function, it is good practice to do so,
+        as you may have the need to return some arbitrary data back to the
+        caller via <code>pthread_join()</code>.</li>
+  </ul>
+  <h3>pthread Attributes</h3>
+  <p>
+    Threads can be assigned various thread attributes at the time of thread
+    creation. This is controlled through the second argument to
+    <code>pthread_create()</code>. You must first pass the
+    <code>pthread_attr_t</code> variable through:
+  </p>
+<div><div id="highlighter_985985" class="syntaxhighlighter  c"><div class="toolbar"><span><a href="https://randu.org/tutorials/threads/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="c color1 bold">int</code> <code class="c plain">pthread_attr_init(pthread_attr_t *attr);</code></div><div class="line number2 index1 alt1">&nbsp;</div><div class="line number3 index2 alt2"><code class="c comments">/* ignore me: needed so underscores above do not get clipped off */</code></div></div></td></tr></tbody></table></div></div>
+  <p>
+    Some attributes that can be set are:
+  </p>
+<div><div id="highlighter_87391" class="syntaxhighlighter  c"><div class="toolbar"><span><a href="https://randu.org/tutorials/threads/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div><div class="line number5 index4 alt2">5</div><div class="line number6 index5 alt1">6</div><div class="line number7 index6 alt2">7</div><div class="line number8 index7 alt1">8</div><div class="line number9 index8 alt2">9</div><div class="line number10 index9 alt1">10</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="c color1 bold">int</code> <code class="c plain">pthread_attr_setdetachstate(pthread_attr_t *attr, </code><code class="c color1 bold">int</code> <code class="c plain">detachstate);</code></div><div class="line number2 index1 alt1"><code class="c color1 bold">int</code> <code class="c plain">pthread_attr_setguardsize(pthread_attr_t *attr, </code><code class="c color1 bold">size_t</code> <code class="c plain">guardsize);</code></div><div class="line number3 index2 alt2"><code class="c color1 bold">int</code> <code class="c plain">pthread_attr_setinheritsched(pthread_attr_t *attr, </code><code class="c color1 bold">int</code> <code class="c plain">inheritsched);</code></div><div class="line number4 index3 alt1"><code class="c color1 bold">int</code> <code class="c plain">pthread_attr_setschedparam(pthread_attr_t *attr, </code><code class="c keyword bold">const</code> <code class="c keyword bold">struct</code> <code class="c plain">sched_param *param);</code></div><div class="line number5 index4 alt2"><code class="c color1 bold">int</code> <code class="c plain">pthread_attr_setschedpolicy(pthread_attr_t *attr, </code><code class="c color1 bold">int</code> <code class="c plain">policy);</code></div><div class="line number6 index5 alt1"><code class="c color1 bold">int</code> <code class="c plain">pthread_attr_setscope(pthread_attr_t *attr, </code><code class="c color1 bold">int</code> <code class="c plain">contentionscope);</code></div><div class="line number7 index6 alt2"><code class="c color1 bold">int</code> <code class="c plain">pthread_attr_setstackaddr(pthread_attr_t *attr, </code><code class="c keyword bold">void</code> <code class="c plain">*stackaddr);</code></div><div class="line number8 index7 alt1"><code class="c color1 bold">int</code> <code class="c plain">pthread_attr_setstacksize(pthread_attr_t *attr, </code><code class="c color1 bold">size_t</code> <code class="c plain">stacksize);</code></div><div class="line number9 index8 alt2">&nbsp;</div><div class="line number10 index9 alt1"><code class="c comments">/* ignore me: needed so underscores above do not get clipped off */</code></div></div></td></tr></tbody></table></div></div>
+  <p>
+    Attributes can be retrieved via complimentary <code>get</code> functions.
+    Consult the man pages for the effect of each of these attributes.
+  </p>
+  <h3>pthread Mutexes</h3>
+  <p>
+    pthread mutexes are created through the following function:
+  </p>
+<div><div id="highlighter_808072" class="syntaxhighlighter  c"><div class="toolbar"><span><a href="https://randu.org/tutorials/threads/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="c color1 bold">int</code> <code class="c plain">pthread_mutex_init(pthread_mutex_t *mutex, </code><code class="c keyword bold">const</code> <code class="c plain">pthread_mutexattr_t *mutexattr);</code></div><div class="line number2 index1 alt1">&nbsp;</div><div class="line number3 index2 alt2"><code class="c comments">/* ignore me: needed so underscores above do not get clipped off */</code></div></div></td></tr></tbody></table></div></div>
+  <p>
+    The <code>pthread_mutex_init()</code> function requires a
+    <code>pthread_mutex_t</code> variable to operate on as the first
+    argument. Attributes for the mutex can be given through the second
+    parameter. To specify default attributes, pass <code>NULL</code> as the
+    second parameter. Alternatively, mutexes can be initialized to default 
+    values through a convenient macro rather than a function call:
+  </p>
+<div><div id="highlighter_426882" class="syntaxhighlighter  c"><div class="toolbar"><span><a href="https://randu.org/tutorials/threads/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="c plain">pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;</code></div></div></td></tr></tbody></table></div></div>
+  <p>
+    Here a mutex object named <code>lock</code> is initialized to the default
+    pthread mutex values.
+    <br><br>
+    To perform mutex locking and unlocking, the pthreads provides the following
+    functions:
+  </p>
+<div><div id="highlighter_56200" class="syntaxhighlighter  c"><div class="toolbar"><span><a href="https://randu.org/tutorials/threads/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div><div class="line number5 index4 alt2">5</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="c color1 bold">int</code> <code class="c plain">pthread_mutex_lock(pthread_mutex_t *mutex);</code></div><div class="line number2 index1 alt1"><code class="c color1 bold">int</code> <code class="c plain">pthread_mutex_trylock(pthread_mutex_t *mutex);</code></div><div class="line number3 index2 alt2"><code class="c color1 bold">int</code> <code class="c plain">pthread_mutex_unlock(pthread_mutex_t *mutex);</code></div><div class="line number4 index3 alt1">&nbsp;</div><div class="line number5 index4 alt2"><code class="c comments">/* ignore me: needed so underscores above do not get clipped off */</code></div></div></td></tr></tbody></table></div></div>
+  <p>
+    Each of these calls requires a reference to the mutex object. The 
+    difference between the lock and trylock calls is that lock is blocking
+    and trylock is non-blocking and will return immediately even if gaining
+    the mutex lock has failed due to it already being held/locked. It is
+    absolutely essential to check the return value of the trylock call to
+    determine if the mutex has been successfully acquired or not. If it has
+    not, then the error code <code>EBUSY</code> will be returned.
+    <br><br>
+    Let's expand the previous example with code that uses mutexes:
+  </p>
+<div><div id="highlighter_487703" class="syntaxhighlighter  c"><div class="toolbar"><span><a href="https://randu.org/tutorials/threads/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div><div class="line number5 index4 alt2">5</div><div class="line number6 index5 alt1">6</div><div class="line number7 index6 alt2">7</div><div class="line number8 index7 alt1">8</div><div class="line number9 index8 alt2">9</div><div class="line number10 index9 alt1">10</div><div class="line number11 index10 alt2">11</div><div class="line number12 index11 alt1">12</div><div class="line number13 index12 alt2">13</div><div class="line number14 index13 alt1">14</div><div class="line number15 index14 alt2">15</div><div class="line number16 index15 alt1">16</div><div class="line number17 index16 alt2">17</div><div class="line number18 index17 alt1">18</div><div class="line number19 index18 alt2">19</div><div class="line number20 index19 alt1">20</div><div class="line number21 index20 alt2">21</div><div class="line number22 index21 alt1">22</div><div class="line number23 index22 alt2">23</div><div class="line number24 index23 alt1">24</div><div class="line number25 index24 alt2">25</div><div class="line number26 index25 alt1">26</div><div class="line number27 index26 alt2">27</div><div class="line number28 index27 alt1">28</div><div class="line number29 index28 alt2">29</div><div class="line number30 index29 alt1">30</div><div class="line number31 index30 alt2">31</div><div class="line number32 index31 alt1">32</div><div class="line number33 index32 alt2">33</div><div class="line number34 index33 alt1">34</div><div class="line number35 index34 alt2">35</div><div class="line number36 index35 alt1">36</div><div class="line number37 index36 alt2">37</div><div class="line number38 index37 alt1">38</div><div class="line number39 index38 alt2">39</div><div class="line number40 index39 alt1">40</div><div class="line number41 index40 alt2">41</div><div class="line number42 index41 alt1">42</div><div class="line number43 index42 alt2">43</div><div class="line number44 index43 alt1">44</div><div class="line number45 index44 alt2">45</div><div class="line number46 index45 alt1">46</div><div class="line number47 index46 alt2">47</div><div class="line number48 index47 alt1">48</div><div class="line number49 index48 alt2">49</div><div class="line number50 index49 alt1">50</div><div class="line number51 index50 alt2">51</div><div class="line number52 index51 alt1">52</div><div class="line number53 index52 alt2">53</div><div class="line number54 index53 alt1">54</div><div class="line number55 index54 alt2">55</div><div class="line number56 index55 alt1">56</div><div class="line number57 index56 alt2">57</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="c preprocessor">#include &lt;stdio.h&gt;</code></div><div class="line number2 index1 alt1"><code class="c preprocessor">#include &lt;stdlib.h&gt;</code></div><div class="line number3 index2 alt2"><code class="c preprocessor">#include &lt;pthread.h&gt;</code></div><div class="line number4 index3 alt1">&nbsp;</div><div class="line number5 index4 alt2"><code class="c preprocessor">#define NUM_THREADS 5 </code></div><div class="line number6 index5 alt1">&nbsp;</div><div class="line number7 index6 alt2"><code class="c comments">/* create thread argument struct for thr_func() */</code></div><div class="line number8 index7 alt1"><code class="c keyword bold">typedef</code> <code class="c keyword bold">struct</code> <code class="c plain">_thread_data_t {</code></div><div class="line number9 index8 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c color1 bold">int</code> <code class="c plain">tid;</code></div><div class="line number10 index9 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c color1 bold">double</code> <code class="c plain">stuff;</code></div><div class="line number11 index10 alt2"><code class="c plain">} thread_data_t;</code></div><div class="line number12 index11 alt1">&nbsp;</div><div class="line number13 index12 alt2"><code class="c comments">/* shared data between threads */</code></div><div class="line number14 index13 alt1"><code class="c color1 bold">double</code> <code class="c plain">shared_x;</code></div><div class="line number15 index14 alt2"><code class="c plain">pthread_mutex_t lock_x;</code></div><div class="line number16 index15 alt1">&nbsp;</div><div class="line number17 index16 alt2"><code class="c keyword bold">void</code> <code class="c plain">*thr_func(</code><code class="c keyword bold">void</code> <code class="c plain">*arg) {</code></div><div class="line number18 index17 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">thread_data_t *data = (thread_data_t *)arg;</code></div><div class="line number19 index18 alt2">&nbsp;</div><div class="line number20 index19 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c functions bold">printf</code><code class="c plain">(</code><code class="c string">"hello from thr_func, thread id: %d\n"</code><code class="c plain">, data-&gt;tid);</code></div><div class="line number21 index20 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c comments">/* get mutex before modifying and printing shared_x */</code></div><div class="line number22 index21 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">pthread_mutex_lock(&amp;lock_x);</code></div><div class="line number23 index22 alt2"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c plain">shared_x += data-&gt;stuff;</code></div><div class="line number24 index23 alt1"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c functions bold">printf</code><code class="c plain">(</code><code class="c string">"x = %f\n"</code><code class="c plain">, shared_x);</code></div><div class="line number25 index24 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">pthread_mutex_unlock(&amp;lock_x);</code></div><div class="line number26 index25 alt1">&nbsp;</div><div class="line number27 index26 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">pthread_exit(NULL);</code></div><div class="line number28 index27 alt1"><code class="c plain">}</code></div><div class="line number29 index28 alt2">&nbsp;</div><div class="line number30 index29 alt1"><code class="c color1 bold">int</code> <code class="c plain">main(</code><code class="c color1 bold">int</code> <code class="c plain">argc, </code><code class="c color1 bold">char</code> <code class="c plain">**argv) {</code></div><div class="line number31 index30 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">pthread_t thr[NUM_THREADS];</code></div><div class="line number32 index31 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c color1 bold">int</code> <code class="c plain">i, rc;</code></div><div class="line number33 index32 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c comments">/* create a thread_data_t argument array */</code></div><div class="line number34 index33 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">thread_data_t thr_data[NUM_THREADS];</code></div><div class="line number35 index34 alt2">&nbsp;</div><div class="line number36 index35 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c comments">/* initialize shared data */</code></div><div class="line number37 index36 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">shared_x = 0;</code></div><div class="line number38 index37 alt1">&nbsp;</div><div class="line number39 index38 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c comments">/* initialize pthread mutex protecting "shared_x" */</code></div><div class="line number40 index39 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">pthread_mutex_init(&amp;lock_x, NULL);</code></div><div class="line number41 index40 alt2">&nbsp;</div><div class="line number42 index41 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c comments">/* create threads */</code></div><div class="line number43 index42 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c keyword bold">for</code> <code class="c plain">(i = 0; i &lt; NUM_THREADS; ++i) {</code></div><div class="line number44 index43 alt1"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c plain">thr_data[i].tid = i;</code></div><div class="line number45 index44 alt2"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c plain">thr_data[i].stuff = (i + 1) * NUM_THREADS;</code></div><div class="line number46 index45 alt1"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c keyword bold">if</code> <code class="c plain">((rc = pthread_create(&amp;thr[i], NULL, thr_func, &amp;thr_data[i]))) {</code></div><div class="line number47 index46 alt2"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c functions bold">fprintf</code><code class="c plain">(stderr, </code><code class="c string">"error: pthread_create, rc: %d\n"</code><code class="c plain">, rc);</code></div><div class="line number48 index47 alt1"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c keyword bold">return</code> <code class="c plain">EXIT_FAILURE;</code></div><div class="line number49 index48 alt2"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c plain">}</code></div><div class="line number50 index49 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">}</code></div><div class="line number51 index50 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c comments">/* block until all threads complete */</code></div><div class="line number52 index51 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c keyword bold">for</code> <code class="c plain">(i = 0; i &lt; NUM_THREADS; ++i) {</code></div><div class="line number53 index52 alt2"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c plain">pthread_join(thr[i], NULL);</code></div><div class="line number54 index53 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">}</code></div><div class="line number55 index54 alt2">&nbsp;</div><div class="line number56 index55 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c keyword bold">return</code> <code class="c plain">EXIT_SUCCESS;</code></div><div class="line number57 index56 alt2"><code class="c plain">}</code></div></div></td></tr></tbody></table></div></div>
+  <p>
+    In the above example code, we add some shared data called
+    <code>shared_x</code> and ensure serialized access to this variable
+    through a mutex named <code>lock_x</code>. Within the
+    <code>thr_func()</code> we call <code>pthread_mutex_lock()</code>
+    before reading or modifying the shared data. Note that we continue
+    to maintain the lock even through the <code>printf()</code> function
+    call as releasing the lock before this and printing can lead to
+    inconsistent results in the output. Recall that the code in-between
+    the lock and unlock calls is called a critical section. Critical sections
+    should be minimized for increased concurrency. 
+  </p>
+  <h3>pthread Condition Variables</h3>
+  <p>
+    pthread condition variables are created through the following function
+    call or initializer macro similar to mutexes:
+  </p>
+<div><div id="highlighter_677141" class="syntaxhighlighter  c"><div class="toolbar"><span><a href="https://randu.org/tutorials/threads/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div><div class="line number5 index4 alt2">5</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="c color1 bold">int</code> <code class="c plain">pthread_cond_init(pthread_cond_t *cond, pthread_condattr_t *cond_attr);</code></div><div class="line number2 index1 alt1">&nbsp;</div><div class="line number3 index2 alt2"><code class="c plain">pthread_cond_t cond = PTHREAD_COND_INITIALIZER;</code></div><div class="line number4 index3 alt1">&nbsp;</div><div class="line number5 index4 alt2"><code class="c comments">/* ignore me: needed so underscores above do not get clipped off */</code></div></div></td></tr></tbody></table></div></div>
+  <p>
+    Similar to the mutex initialization call, condition variables can be
+    given non-default attributes through the second parameter. To specify
+    defaults, either use the initializer macro or specify <code>NULL</code>
+    in the second parameter to the call to <code>pthread_cond_init()</code>.
+    <br><br>
+    Threads can act on condition variables in three ways: wait,
+    signal or broadcast:
+  </p>
+<div><div id="highlighter_517530" class="syntaxhighlighter  c"><div class="toolbar"><span><a href="https://randu.org/tutorials/threads/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div><div class="line number5 index4 alt2">5</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="c color1 bold">int</code> <code class="c plain">pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);</code></div><div class="line number2 index1 alt1"><code class="c color1 bold">int</code> <code class="c plain">pthread_cond_signal(pthread_cond_t *cond);</code></div><div class="line number3 index2 alt2"><code class="c color1 bold">int</code> <code class="c plain">pthread_cond_broadcast(pthread_cond_t *cond);</code></div><div class="line number4 index3 alt1">&nbsp;</div><div class="line number5 index4 alt2"><code class="c comments">/* ignore me: needed so underscores above do not get clipped off */</code></div></div></td></tr></tbody></table></div></div>
+  <p>
+    <code>pthread_cond_wait()</code> puts the current thread to sleep. It
+    requires a mutex of the associated shared resource value it is waiting
+    on. <code>pthread_cond_signal()</code> signals <i>one</i> thread out of the
+    possibly many sleeping threads to wakeup.
+    <code>pthread_cond_broadcast()</code> signals <i>all</i> threads waiting
+    on the <code>cond</code> condition variable to wakeup. Here is an
+    example on using pthread condition variables:
+  </p>
+<div><div id="highlighter_898116" class="syntaxhighlighter  c"><div class="toolbar"><span><a href="https://randu.org/tutorials/threads/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div><div class="line number5 index4 alt2">5</div><div class="line number6 index5 alt1">6</div><div class="line number7 index6 alt2">7</div><div class="line number8 index7 alt1">8</div><div class="line number9 index8 alt2">9</div><div class="line number10 index9 alt1">10</div><div class="line number11 index10 alt2">11</div><div class="line number12 index11 alt1">12</div><div class="line number13 index12 alt2">13</div><div class="line number14 index13 alt1">14</div><div class="line number15 index14 alt2">15</div><div class="line number16 index15 alt1">16</div><div class="line number17 index16 alt2">17</div><div class="line number18 index17 alt1">18</div><div class="line number19 index18 alt2">19</div><div class="line number20 index19 alt1">20</div><div class="line number21 index20 alt2">21</div><div class="line number22 index21 alt1">22</div><div class="line number23 index22 alt2">23</div><div class="line number24 index23 alt1">24</div><div class="line number25 index24 alt2">25</div><div class="line number26 index25 alt1">26</div><div class="line number27 index26 alt2">27</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="c keyword bold">void</code> <code class="c plain">*thr_func1(</code><code class="c keyword bold">void</code> <code class="c plain">*arg) {</code></div><div class="line number2 index1 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c comments">/* thread code blocks here until MAX_COUNT is reached */</code></div><div class="line number3 index2 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">pthread_mutex_lock(&amp;count_lock);</code></div><div class="line number4 index3 alt1"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c keyword bold">while</code> <code class="c plain">(count &lt; MAX_COUNT) {</code></div><div class="line number5 index4 alt2"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c plain">pthread_cond_wait(&amp;count_cond, &amp;count_lock);</code></div><div class="line number6 index5 alt1"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c plain">}</code></div><div class="line number7 index6 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">pthread_mutex_unlock(&amp;count_lock);</code></div><div class="line number8 index7 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c comments">/* proceed with thread execution */</code></div><div class="line number9 index8 alt2">&nbsp;</div><div class="line number10 index9 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">pthread_exit(NULL);</code></div><div class="line number11 index10 alt2"><code class="c plain">}</code></div><div class="line number12 index11 alt1">&nbsp;</div><div class="line number13 index12 alt2"><code class="c comments">/* some other thread code that signals a waiting thread that MAX_COUNT has been reached */</code></div><div class="line number14 index13 alt1"><code class="c keyword bold">void</code> <code class="c plain">*thr_func2(</code><code class="c keyword bold">void</code> <code class="c plain">*arg) {</code></div><div class="line number15 index14 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">pthread_mutex_lock(&amp;count_lock);</code></div><div class="line number16 index15 alt1"><code class="c spaces">&nbsp;&nbsp;</code>&nbsp;</div><div class="line number17 index16 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c comments">/* some code here that does interesting stuff and modifies count */</code></div><div class="line number18 index17 alt1">&nbsp;</div><div class="line number19 index18 alt2"><code class="c spaces">&nbsp;&nbsp;</code><code class="c keyword bold">if</code> <code class="c plain">(count == MAX_COUNT) {</code></div><div class="line number20 index19 alt1"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c plain">pthread_mutex_unlock(&amp;count_lock);</code></div><div class="line number21 index20 alt2"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c plain">pthread_cond_signal(&amp;count_cond);</code></div><div class="line number22 index21 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">} </code><code class="c keyword bold">else</code> <code class="c plain">{</code></div><div class="line number23 index22 alt2"><code class="c spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="c plain">pthread_mutex_unlock(&amp;count_lock);</code></div><div class="line number24 index23 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">}</code></div><div class="line number25 index24 alt2">&nbsp;</div><div class="line number26 index25 alt1"><code class="c spaces">&nbsp;&nbsp;</code><code class="c plain">pthread_exit(NULL);</code></div><div class="line number27 index26 alt2"><code class="c plain">} </code></div></div></td></tr></tbody></table></div></div>
+  <p>
+    In <code>thr_func1()</code>, we are locking the <code>count_lock</code> 
+    mutex so we can read the value of count without entering a potential race 
+    condition. The subsequent <code>pthread_cond_wait()</code> also requires a
+    locked mutex as the second parameter to avoid a race condition where a
+    thread prepares to wait on a condition variable and another thread
+    signals the condition just before the first thread actually waits on it
+    (as explained from the man page on <code>pthread_cond_wait</code>). Notice 
+    how a <code>while</code> loop is used instead of an <code>if</code>
+    statement for the <code>pthread_cond_wait()</code> call. This is because 
+    of spurious wakeups problem mentioned previously. If a thread has been
+    woken, it does not mean it was due to a
+    <code>pthread_cond_signal()</code> or
+    <code>pthread_cond_broadcast()</code> call.
+    <code>pthread_cond_wait()</code> if awoken, automatically
+    tries to re-acquire the mutex, and will block if it cannot.
+    Locks that other threads could be waiting on should be released
+    <i>before</i> you signal or broadcast.
+  </p>
+  <h3>pthread Barrier</h3>
+  <p>
+    pthreads can participate in a barrier to synchronize to some point in
+    time. Before a barrier can be called, a pthread barrier object must be
+    initialized first:
+  </p>
+<div><div id="highlighter_145983" class="syntaxhighlighter  c"><div class="toolbar"><span><a href="https://randu.org/tutorials/threads/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div><div class="line number4 index3 alt1">4</div><div class="line number5 index4 alt2">5</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="c color1 bold">int</code> <code class="c plain">pthread_barrier_init(pthread_barrier_t *barrier, pthread_barrierattr_t *barrier_attr, unsigned </code><code class="c color1 bold">int</code> <code class="c plain">count);</code></div><div class="line number2 index1 alt1">&nbsp;</div><div class="line number3 index2 alt2"><code class="c plain">pthread_barrier_t barrier = PTHREAD_BARRIER_INITIALIZER(count);</code></div><div class="line number4 index3 alt1">&nbsp;</div><div class="line number5 index4 alt2"><code class="c comments">/* ignore me: needed so underscores above do not get clipped off */</code></div></div></td></tr></tbody></table></div></div>
+  <p>
+    Barrier objects are initialized like mutexes or condition variables,
+    except there is one additional parameter, <code>count</code>. The count
+    variable defines the number threads that must join the barrier for the
+    barrier to reach completion and unblock all threads waiting at the barrier.
+    If default barrier attributes are used (i.e. <code>NULL</code> for
+    the second parameter), one can use the initializer macro with the
+    specified <code>count</code>.
+    <br><br>
+    The actual barrier call follows:
+  </p>
+<div><div id="highlighter_382543" class="syntaxhighlighter  c"><div class="toolbar"><span><a href="https://randu.org/tutorials/threads/#" class="toolbar_item command_help help">?</a></span></div><table border="0" cellpadding="0" cellspacing="0"><tbody><tr><td class="gutter"><div class="line number1 index0 alt2">1</div><div class="line number2 index1 alt1">2</div><div class="line number3 index2 alt2">3</div></td><td class="code"><div class="container"><div class="line number1 index0 alt2"><code class="c color1 bold">int</code> <code class="c plain">pthread_barrier_wait(pthread_barrier_t *barrier);</code></div><div class="line number2 index1 alt1">&nbsp;</div><div class="line number3 index2 alt2"><code class="c comments">/* ignore me: needed so underscores above do not get clipped off */</code></div></div></td></tr></tbody></table></div></div>
+  <p>
+    This function would be inside thread code where the barrier is to take
+    place. Once <code>count</code> number of threads have called
+    <code>pthread_barrier_wait()</code> then the barrier condition is met
+    and all threads are unblocked and progress continues.
+  </p>
+  <h3>Miscellaneous</h3>
+  <p>
+    Here are some suggestions and issues you should consider when using
+    pthreads:
+  </p>
+  <ul>
+    <li>You should check all return values for important pthread function
+        calls!</li>
+    <li>Sometimes it is desirable for a thread not to terminate (e.g., a
+        server with a worker thread pool). This can be solved by placing the
+        thread code in an infinite loop and using condition variables. Of
+        course, there needs to be some terminating condition(s) to the
+        infinite loop (i.e., <code>break</code> when it is deemed
+        necessary).</li>
+  </ul>
+  <p>
+    Additional useful pthread calls:
+  </p>
+  <ul>
+    <li><code>pthread_kill()</code> can be used to deliver signals to
+    specific threads.</li>
+    <li><code>pthread_self()</code> returns a handle on the calling
+    thread.</li>
+    <li><code>pthread_equal()</code> compares for equality between two pthread
+        ids</li>
+    <li><code>pthread_once()</code> can be used to ensure that an
+    initializing function within a thread is only run once.</li>
+    <li>There are many more useful functions in the pthread library.
+    Consult pthreads man pages or the Nichols text (Appendix C).</li>
+  </ul>
+
+  <h2 id="performance">Performance Considerations</h2>
+  <p>
+    The performance gains from using threads can be substantial when done
+    properly and in the right problem context, but can it be even better? You 
+    should consider the following when analyzing your program for potential 
+    bottlenecks:
+  </p>
+  <ul>
+    <li><b>Lock granularity</b> - How "big" (coarse) or "small" (fine) 
+    are your mutexes? Do they lock your whole structure or fields of 
+    a structure? The more fine-grained you make your locks, the more 
+    concurrency you can gain, but at the cost of more overhead and 
+    potential deadlocks.</li>
+    <li><b>Lock ordering</b> - Make sure your locks are always locked in
+    an agreed order (if they are not, make sure you take steps to rectify
+    situations where locks are obtained in an out-of-order fashion, e.g.
+    by using trylock/unlock calls).</li>
+    <li><b>Lock frequency</b> - Are you locking too often? Locking at
+    unnecessary times? Reduce such occurences to fully exploit
+    concurrency and reduce synchronization overhead.</li>
+    <li><b>Critical sections</b> - This has been mentioned before,
+    but you should take extra steps to minimize critical sections which
+    can be potentially large bottlenecks.</li>
+    <li><b>Worker thread pool</b> - If you are using a Boss/Worker thread
+    model, make sure you pre-allocate your threads instead of creating
+    threads on demand. It doesn't matter to the user how long it took your
+    server to initialize, it only matters how fast it processes his or
+    her request!</li>
+    <li><b>Contention scope</b> - Do your threads perform better when they
+    are in contention with all of the system's processes? Or do they
+    perform better when individually scheduled by the thread library
+    itself? Only experimentation can give you the answers.</li>
+    <li><b>Scheduling class</b> - We have not touched on this topic, but
+    changing the thread scheduling class from FIFO to RR can give better
+    response times. But is this what you really want? Refer to Nichols or
+    Lewis book for more information on thread scheduling classes.</li>
+    <li><b>Too many threads?</b> - At what point are there too many
+    threads? Can it serverely impact and degrade performance? Again, only
+    experimentation will give you the real answers to this question.</li>
+  </ul>
+  
+  <h2 id="other">Other Approaches</h2>
+  <h3>C++ Template Libraries</h3>
+  <p>
+    There are various template libraries available that ease implementation
+    of multithreading in a (semi-)portable fashion. For those programming
+    in C++, you may want to look at <a href="http://www.boost.org/">Boost</a>,
+    <a href="http://threadingbuildingblocks.org/">Intel Threading Building
+    Blocks (TBB)</a> and <a href="http://pocoproject.org/">POCO</a>.
+  </p>
+  <h3>Multiprocess and Shared Memory</h3>
+  <p>
+    This tutorial has explored the very basics of multithreaded programming. 
+    What about multiprocess programming? 
+    <br><br>
+    These topics are beyond the scope of this document, but to perform
+    cross-process synchronization, one would use some form of IPC: pipes,
+    semaphores, message queues, or shared memory. Of all of the forms of
+    IPC, shared memory is usually the fastest (excluding doors). You can use 
+    <code>mmap()</code>, POSIX (e.g., <code>shm_open()</code>) or SysV
+    (e.g., <code>shmget()</code>) semantics when dealing with cross-process 
+    resource management, IPC and synchronization. For those interested
+    in shared memory programming in C++, I recommend looking at
+    <a href="http://www.boost.org/doc/html/interprocess.html">Boost.Interprocess</a>
+    first.
+  </p>
+  <h3>OpenMP</h3>
+  <p>
+    <a href="http://openmp.org/wp/">OpenMP</a> is a portable interface for
+    implementing fork-join parallelism on shared memory multi-processor
+    machines. It is available for C/C++ and Fortran. For a quick introduction,
+    please see the slides <a href="https://randu.org/tutorials/">here</a>.
+  </p>
+  <h3>MPI</h3>
+  <p>
+    The <a href="http://en.wikipedia.org/wiki/Message_Passing_Interface">Message
+    Passing Interface (MPI)</a> is the de-facto standard for distributed
+    memory parallel processing. Data can be sent/received from distinct 
+    computing machines with support for vectored I/O (scatter/gather),
+    synchronization and collectives.
+    <br><br>
+    It is not uncommon to see programs that are both multithreaded and
+    contain MPI calls to take advantage of shared memory within a node and 
+    MPI to perform processing across nodes.
+  </p>
+
+  <h2 id="resources">Resources</h2>
+  <p>
+    It is difficult to cover more than an introduction to threads with this 
+    short tutorial and overview. For more in-depth coverage on threads (like
+    thread scheduling classes, thread-specific data (thread local storage), 
+    thread canceling, handling signals and reader/writer locks) and pthreads 
+    programming, I recommend these books:
+  </p>
+  <ul>
+    <li>Lewis, Bill and Daniel J. Berg. 
+    <u>Multithreaded Programming with Pthreads</u>. California: Prentice 
+    Hall, 1998.</li>
+    <li>Nichols, Bradford, et. al. <u>Pthreads Programming</u>. Beijing: 
+    O'Reilly &amp; Associates, Inc., 1998.</li>
+  </ul>
+  <p>
+    There are many excellent online resources regarding pthreads on the web. 
+    Use your favorite search engine to find these.
+  </p>
+  <hr>
+  <p>
+     <b><i>Notice:</i></b> Please do not replicate or copy these pages and 
+     host them elsewhere. This is to ensure that the latest version can always 
+     be found here.
+     <br><br>
+     <b><i>Disclaimer:</i></b> The document author has published these pages
+     with the hope that it may be useful to others. However, the document 
+     author does not guarantee that all information contained on these 
+     webpages are correct or accurate. There is no warranty, expressed or 
+     implied, of merchantability or fitness for any purpose. The author does 
+     not assume any liability or responsibility for the use of the information 
+     contained on these webpages.
+     <br><br> 
+     If you see an error, please send an email to the address below indicating 
+     the error. Your feedback is greatly appreciated and will help to 
+     continually improve these pages.
+  </p>
+  <address>      
+    © 1999-2022 Alfred Park (fred
+    [ANTISPAM-REMOVE-THIS] AT randu.org)<br><br>
+    <a href="http://validator.w3.org/check/referer">
+    <img src="./Multithreaded Programming (POSIX pthreads Tutorial)_files/valid-xhtml10-blue.png" alt="Valid XHTML 1.0!"></a>
+    <a href="http://jigsaw.w3.org/css-validator/check/referer">
+    <img src="./Multithreaded Programming (POSIX pthreads Tutorial)_files/valid-css-blue.png" alt="Valid CSS!"></a>
+    <br>
+  </address>
+  
+
+</body></html>
